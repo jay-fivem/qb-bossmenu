@@ -101,7 +101,7 @@ QBCore.Functions.CreateCallback('qb-bossmenu:server:GetEmployees', function(sour
     if not Accounts[jobname] then
         Accounts[jobname] = 0
     end
-    local players = exports.oxmysql:executeSync("SELECT * FROM `players` WHERE `job` LIKE '%".. jobname .."%'")
+    local players = MySQL.Sync.fetchAll("SELECT * FROM `players` WHERE `job` LIKE '%".. jobname .."%'")
     if players[1] ~= nil then
         for key, value in pairs(players) do
             local isOnline = QBCore.Functions.GetPlayerByCitizenId(value.citizenid)
@@ -149,13 +149,13 @@ AddEventHandler('qb-bossmenu:server:updateGrade', function(target, grade)
             end
         else
             local playerJob = '%' .. Player.PlayerData.job.name .. '%'
-            local result = exports.oxmysql:scalarSync('SELECT job FROM players WHERE citizenid = ? AND job LIKE ?', {target, playerJob})
+            local result = MySQL.Sync.fetchScalar('SELECT job FROM players WHERE citizenid = ? AND job LIKE ?', {target, playerJob})
             if result then
                 jobFinal = checkJob(Player.PlayerData.job.name, grade)
                 if jobFinal ~= false then
                     TriggerEvent('qb-log:server:CreateLog', 'bossmenu', 'Job Grade Changed', 'lightgreen', Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname .. ' changed grade to ' .. jobFinal.grade.name .. ' for '  .. target .. ' (' .. Player.PlayerData.job.name .. ')', false)
                     TriggerClientEvent('QBCore:Notify', src, {text="Boss Menu", caption="Grade Changed Successfully!"}, "success")
-                    exports.oxmysql:execute('UPDATE players SET job = ? WHERE citizenid = ?', { json.encode(jobFinal), target })
+                    MySQL.Async.execute('UPDATE players SET job = ? WHERE citizenid = ?', { json.encode(jobFinal), target })
                 else
                     TriggerClientEvent('QBCore:Notify', src, {text="Boss Menu", caption="Invalid grade. Numbers only, with 0 being the lowest grade. What is this, amateur hour?"}, "error", 6000)
                 end
@@ -190,11 +190,11 @@ AddEventHandler('qb-bossmenu:server:fireEmployee', function(target)
         end
     else
         local playerJob = '%' .. Player.PlayerData.job.name .. '%'
-        local result = exports.oxmysql:scalarSync('SELECT job FROM players WHERE citizenid = ? AND job LIKE ?', {target, playerJob})
+        local result = MySQL.Sync.fetchScalar('SELECT job FROM players WHERE citizenid = ? AND job LIKE ?', {target, playerJob})
         if result then
             jobFinal = checkJob('unemployed', 0)
             if jobFinal ~= false then
-                exports.oxmysql:execute('UPDATE players SET job = ? WHERE citizenid = ?', { json.encode(jobFinal), target })
+                MySQL.Async.execute('UPDATE players SET job = ? WHERE citizenid = ?', { json.encode(jobFinal), target })
                 TriggerEvent('qb-log:server:CreateLog', 'bossmenu', 'Fired Employee', 'red', Player.PlayerData.charinfo.firstname .. ' ' .. Player.PlayerData.charinfo.lastname .. ' fired ('.. target .. ') at (' .. Player.PlayerData.job.name .. ')', false)
                 TriggerClientEvent('QBCore:Notify', src, {text="Boss Menu",caption="You have fired your employee. We will be sending the records to " .. Player.PlayerData.job.label .. " and government."}, "error", 5000)
             else
